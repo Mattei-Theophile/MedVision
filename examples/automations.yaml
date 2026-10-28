@@ -1,0 +1,53 @@
+# Exemples d'automatisations Home Assistant (syntaxe 2024.10+).
+# Vérifiez le nom exact des entités dans Paramètres > Appareils > MedVision.
+
+# 1. Un geste « lumiere » bascule la lumière du salon.
+- alias: "MedVision – lumière du salon"
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: event.medvision_salon_geste
+  conditions:
+    - condition: state
+      entity_id: event.medvision_salon_geste
+      attribute: event_type
+      state: lumiere
+  actions:
+    - action: light.toggle
+      target:
+        entity_id: light.salon
+
+# 2. Plusieurs gestes dans une seule automatisation.
+- alias: "MedVision – commandes"
+  mode: queued
+  triggers:
+    - trigger: state
+      entity_id: event.medvision_salon_geste
+  actions:
+    - choose:
+        - conditions: "{{ trigger.to_state.attributes.event_type == 'volet_ouvrir' }}"
+          sequence:
+            - action: cover.open_cover
+              target: { entity_id: cover.salon }
+        - conditions: "{{ trigger.to_state.attributes.event_type == 'volet_fermer' }}"
+          sequence:
+            - action: cover.close_cover
+              target: { entity_id: cover.salon }
+        - conditions: "{{ trigger.to_state.attributes.event_type == 'aide' }}"
+          sequence:
+            - action: notify.notify
+              data:
+                title: "Demande d'aide"
+                message: "Le geste « aide » a été fait devant la caméra du salon."
+
+# 3. Retour visuel (utile pour les personnes sourdes ou malentendantes) :
+#    la lampe clignote quand le geste d'attention est reconnu.
+- alias: "MedVision – confirmation visuelle"
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.medvision_salon_attente
+      to: "on"
+  actions:
+    - action: light.turn_on
+      target: { entity_id: light.salon }
+      data: { flash: short }

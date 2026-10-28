@@ -1,0 +1,38 @@
+# Copier en config.yaml puis : uv run medvision -c config.yaml run
+# Toutes les options peuvent aussi passer par des variables MEDVISION_<OPTION> (ex. MEDVISION_FPS=10).
+
+# Caméra : 0 = première webcam ; ou flux RTSP (utilisez le flux secondaire basse définition).
+camera_source: "0"
+camera_width: 640
+camera_height: 480
+fps: 15
+
+# N'active la détection des mains qu'en cas de mouvement (économise ~80 % de CPU pièce vide).
+motion_gating: true
+
+# Sécurité : geste à faire avant chaque commande. Vide = déclenchement direct (tests seulement).
+attention_gesture: ""
+armed_timeout: 5.0
+cooldown: 1.5
+
+# Réglages fins de la reconnaissance
+window_frames: 24
+default_threshold: 0.35
+stable_hits: 1
+rest_gestures: repos   # gestes neutres, jamais émis (séparés par des virgules)
+ambidextrous: true
+
+# Dossiers
+gestures_dir: gestures
+model_path: models/hand_landmarker.task
+
+# Home Assistant (broker MQTT, souvent l'add-on Mosquitto)
+mqtt_enabled: true
+mqtt_host: homeassistant.local
+mqtt_port: 1883
+mqtt_username: ""
+mqtt_password: ""
+device_id: salon
+device_name: MedVision Salon
+
+log_level: INFO

@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Modèle téléchargé (8 Mo) et configuration locale (peut contenir des mots de passe)
+models/
+/config.yaml
+
+# Les gestes personnels ne sont pas versionnés par défaut ; voir gestures/README.md.
+gestures/*.json

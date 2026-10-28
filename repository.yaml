@@ -1,0 +1,5 @@
+# Permet d'ajouter ce dépôt dans Home Assistant :
+# Paramètres > Modules complémentaires > Boutique > ⋮ > Dépôts > URL du dépôt GitHub
+name: MedVision — commande par gestes
+url: https://github.com/VOTRE_COMPTE/medvision
+maintainer: Théophile Mattei

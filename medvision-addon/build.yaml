@@ -1,0 +1,6 @@
+# MediaPipe nécessite glibc : on part d'une image Debian plutôt que des images Alpine de HA.
+build_from:
+  amd64: python:3.12-slim-bookworm
+  aarch64: python:3.12-slim-bookworm
+args:
+  MEDVISION_REF: v0.1.0

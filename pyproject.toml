@@ -1,0 +1,44 @@
+[project]
+name = "medvision"
+version = "0.1.0"
+description = "Commande domotique par gestes et signes, traitement 100 % local, intégration Home Assistant via MQTT."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Théophile Mattei" }]
+# MediaPipe ne publie pas encore de wheels pour Python 3.13 sur toutes les plateformes.
+requires-python = ">=3.10,<3.13"
+keywords = ["home-assistant", "gesture-recognition", "sign-language", "mediapipe", "mqtt", "accessibility"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Home Automation",
+    "Intended Audience :: End Users/Desktop",
+]
+dependencies = [
+    "mediapipe>=0.10.14",
+    # MediaPipe dépend déjà d'opencv-contrib-python : ne pas ajouter opencv-python (conflit sur cv2).
+    "opencv-contrib-python>=4.8",
+    "numpy>=1.26",
+    "paho-mqtt>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+medvision = "medvision.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[build-system]
+requires = ["uv_build>=0.9.0,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

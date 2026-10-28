@@ -1,0 +1,48 @@
+name: MedVision Gesture Engine
+version: "0.1.0"
+slug: medvision
+description: Commande domotique par gestes et signes, 100 % locale (aucune vidéo stockée).
+url: https://github.com/VOTRE_COMPTE/medvision
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+# Accès aux webcams USB (/dev/video*).
+video: true
+# Les gestes sont rangés dans /share/medvision/gestures.
+map:
+  - type: share
+    read_only: false
+# Récupère automatiquement les identifiants de l'add-on Mosquitto.
+services:
+  - mqtt:want
+options:
+  camera_source: "0"
+  fps: 15
+  device_id: salon
+  device_name: MedVision Salon
+  attention_gesture: ""
+  armed_timeout: 5
+  cooldown: 1.5
+  motion_gating: true
+  mqtt_host: auto
+  log_level: INFO
+schema:
+  camera_source: str
+  fps: int(1,30)
+  device_id: match(^[a-z0-9_]+$)
+  device_name: str
+  attention_gesture: str?
+  armed_timeout: float(1,30)
+  cooldown: float(0,10)
+  motion_gating: bool
+  mqtt_host: str
+  mqtt_port: port?
+  mqtt_username: str?
+  mqtt_password: password?
+  default_threshold: float(0.05,2)?
+  window_frames: int(5,60)?
+  num_hands: int(1,2)?
+  log_level: list(DEBUG|INFO|WARNING|ERROR)

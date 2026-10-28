@@ -1,0 +1,38 @@
+name: Retour de test
+description: Partager votre expérience (ça marche, ça ne marche pas, idées)
+labels: [retour]
+body:
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installation
+      options: [Add-on Home Assistant, Docker, uv sur PC, Autre]
+    validations: { required: true }
+  - type: input
+    id: hardware
+    attributes:
+      label: Matériel
+      placeholder: "Raspberry Pi 5 8 Go + webcam Logitech C270"
+    validations: { required: true }
+  - type: input
+    id: perf
+    attributes:
+      label: Ligne « Performance » des journaux
+      placeholder: "Performance : 14.8 img/s, 23 % analysées par le réseau de neurones"
+  - type: dropdown
+    id: usage
+    attributes:
+      label: Pour qui testez-vous ?
+      multiple: true
+      options:
+        - Moi-même, sans besoin particulier
+        - Personne âgée
+        - Personne sourde ou malentendante / signeur LSF
+        - Personne à mobilité réduite
+        - Autre besoin spécifique
+  - type: textarea
+    id: details
+    attributes:
+      label: Ce qui s'est passé
+      description: Gestes utilisés, faux déclenchements, gestes non reconnus, éclairage, distance…
+    validations: { required: true }

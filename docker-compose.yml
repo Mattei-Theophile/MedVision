@@ -1,0 +1,25 @@
+# Banc d'essai complet sans Home Assistant : un broker MQTT + le moteur.
+#   docker compose up --build
+#   docker compose exec mosquitto mosquitto_sub -t 'medvision/#' -v   # voir les gestes
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    command: mosquitto -c /mosquitto-no-auth.conf
+    ports:
+      - "1883:1883"
+
+  medvision:
+    build: .
+    depends_on: [mosquitto]
+    environment:
+      MEDVISION_MQTT_HOST: mosquitto
+      MEDVISION_CAMERA_SOURCE: "0"   # ou rtsp://utilisateur:motdepasse@192.168.50.10/stream2
+    devices:
+      - /dev/video0:/dev/video0       # supprimer si caméra IP
+    volumes:
+      - ./gestures:/data/gestures
+      - medvision-models:/data/models
+    restart: unless-stopped
+
+volumes:
+  medvision-models:
