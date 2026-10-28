@@ -9,8 +9,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Le code de l'add-on est installé depuis le dépôt GitHub, à la version indiquée dans build.yaml.
-ARG MEDVISION_REF=main
+ARG MEDVISION_REF=master
 RUN uv pip install --system --no-cache \
-    "medvision @ git+https://github.com/VOTRE_COMPTE/medvision@${MEDVISION_REF}"
+    "medvision @ git+https://github.com/Mattei-Theophile/MedVision@${MEDVISION_REF}"
 
 CMD ["python", "-m", "medvision.addon"]

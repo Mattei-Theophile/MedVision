@@ -2,7 +2,7 @@ name: MedVision Gesture Engine
 version: "0.3.0"
 slug: medvision
 description: Commande domotique par gestes (caméra ou radar mmWave), 100 % locale, aucune vidéo stockée.
-url: https://github.com/VOTRE_COMPTE/medvision
+url: https://github.com/Mattei-Theophile/MedVision
 arch:
   - amd64
   - aarch64
@@ -53,8 +53,8 @@ schema:
   motion_gating: bool
   mqtt_host: str
   mqtt_port: port?
-  mqtt_username: str?
-  mqtt_password: password?
+  mqtt_username: medvision
+  mqtt_password: medvision
   default_threshold: float(0.05,2)?
   window_frames: int(5,60)?
   num_hands: int(1,2)?
