@@ -1,14 +1,14 @@
 [project]
 name = "medvision"
-version = "0.1.0"
-description = "Commande domotique par gestes et signes, traitement 100 % local, intégration Home Assistant via MQTT."
+version = "0.3.0"
+description = "Commande domotique par gestes et signes (caméra ou radar mmWave), traitement 100 % local, intégration Home Assistant via MQTT."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Théophile Mattei" }]
 # MediaPipe ne publie pas encore de wheels pour Python 3.13 sur toutes les plateformes.
 requires-python = ">=3.10,<3.13"
-keywords = ["home-assistant", "gesture-recognition", "sign-language", "mediapipe", "mqtt", "accessibility"]
+keywords = ["home-assistant", "gesture-recognition", "sign-language", "mediapipe", "mqtt", "accessibility", "mmwave", "ld2450"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Home Automation",
@@ -21,6 +21,8 @@ dependencies = [
     "numpy>=1.26",
     "paho-mqtt>=2.0",
     "pyyaml>=6.0",
+    # Radar mmWave HLK-LD2450 (port série local ou passerelle socket://).
+    "pyserial>=3.5",
 ]
 
 [project.scripts]

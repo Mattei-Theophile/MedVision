@@ -4,7 +4,9 @@
 - si aucun serveur MQTT n'est renseigné, récupère automatiquement celui de Home Assistant
   (add-on Mosquitto) auprès du Supervisor ;
 - range les gestes dans /share/medvision/gestures (accessible via Samba / File editor)
-  et le modèle dans /data.
+  et le modèle dans /data ;
+- sert l'interface web d'enregistrement des gestes via l'ingress de Home Assistant
+  (panneau « MedVision » dans la barre latérale, authentification par Home Assistant).
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ from medvision.cli import _setup_logging, build_parser, cmd_run
 from medvision.config import Config
 
 OPTIONS = Path("/data/options.json")
+INGRESS_PORT = 8099  # doit correspondre à ingress_port dans medvision-addon/config.yaml
 log = logging.getLogger("medvision.addon")
 
 
@@ -53,7 +56,12 @@ def main() -> None:
         else:
             cfg.mqtt_host = "core-mosquitto"
 
+    # Interface web : uniquement joignable par le proxy ingress du Supervisor (aucun port
+    # n'est publié sur le réseau local dans config.yaml).
+    cfg.web_enabled, cfg.web_host, cfg.web_port = True, "0.0.0.0", INGRESS_PORT  # noqa: S104
+
     args = build_parser().parse_args(["run"])
+    args.behind_ingress = True
     raise SystemExit(cmd_run(cfg, args))
 
 

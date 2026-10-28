@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MedVision</title>
+<style>
+  :root {
+    --bg: #f4f2ee; --card: #ffffff; --ink: #1d1f22; --muted: #5d636b; --line: #dedad3;
+    --accent: #0b6e69; --accent-ink: #ffffff; --warn: #b25d00; --bad: #b3261e; --ok: #1f7a3a;
+    --armed: #f2b705; --go: #0b6e69; --radius: 14px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141618; --card: #1e2124; --ink: #eceae6; --muted: #a3a8ae; --line: #33373c;
+      --accent: #3fb8af; --accent-ink: #0d1413; --warn: #f0a34a; --bad: #ff8a80; --ok: #7ad28f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 var(--font); }
+  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline;
+           padding: 18px 20px 6px; max-width: 1180px; margin: 0 auto; }
+  header h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .85rem;
+           border: 1px solid var(--line); background: var(--card); }
+  main { display: grid; gap: 16px; padding: 12px 20px 40px; max-width: 1180px; margin: 0 auto;
+         grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+            padding: 18px; min-width: 0; }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; text-transform: uppercase; letter-spacing: .06em;
+       color: var(--muted); }
+  .state { font-size: 1.9rem; font-weight: 700; line-height: 1.2; }
+  .state[data-state="armed"] { color: var(--warn); }
+  .last { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .last .name { font-size: 1.4rem; font-weight: 650; }
+  .muted { color: var(--muted); }
+  .presence { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--line); flex: none; }
+  .dot.on { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 25%, transparent); }
+  canvas { width: 100%; aspect-ratio: 4 / 3; display: block; border-radius: 10px;
+           background: #15181b; }
+  .legend { margin: 8px 0 0; font-size: .9rem; }
+  form { display: grid; gap: 12px; }
+  .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  label { display: grid; gap: 4px; font-weight: 600; font-size: .95rem; }
+  label small { font-weight: 400; color: var(--muted); }
+  input[type=text], input[type=number] { font: inherit; padding: 10px 12px; border-radius: 10px;
+           border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; }
+  .check { display: flex; gap: 8px; align-items: center; font-weight: 500; }
+  .check input { width: 20px; height: 20px; }
+  button { font: inherit; font-weight: 650; border-radius: 10px; padding: 11px 18px; cursor: pointer;
+           border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  button.danger { background: transparent; color: var(--bad); border-color: currentColor; }
+  button.danger.confirm { background: var(--bad); color: #fff; border-color: var(--bad); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  :focus-visible { outline: 3px solid var(--armed); outline-offset: 2px; }
+  .msg { min-height: 1.5em; }
+  .msg.error { color: var(--bad); font-weight: 600; }
+  .rec { display: none; border-radius: 12px; padding: 18px; text-align: center; margin-top: 4px;
+         border: 2px solid var(--line); }
+  .rec.active { display: block; }
+  .rec[data-phase="capture"] { background: var(--go); color: #fff; border-color: var(--go); }
+  .rec[data-phase="countdown"] { border-color: var(--armed); }
+  .rec #rec-title { opacity: .85; }
+  .rec .big { font-size: 3.2rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .bar { height: 10px; border-radius: 6px; background: color-mix(in srgb, currentColor 20%, transparent);
+         overflow: hidden; margin: 12px 0; }
+  .bar > div { height: 100%; width: 0; background: currentColor; transition: width .2s linear; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .85rem; color: var(--muted); font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; }
+  tr.incompatible td { color: var(--muted); }
+  .q-bon { color: var(--ok); } .q-warn { color: var(--warn); }
+  .table-wrap { overflow-x: auto; position: relative; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  ul.history { list-style: none; margin: 0; padding: 0; }
+  ul.history li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0;
+                  border-bottom: 1px solid var(--line); }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .toolbar h2 { margin: 0; }
+  footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 0 20px 30px; }
+  @media (max-width: 520px) { .row { grid-template-columns: 1fr 1fr; } main, header { padding-left: 16px; padding-right: 16px; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>MedVision</h1>
+  <span class="sub" id="device">…</span>
+  <span class="badge" id="sensor-badge">capteur…</span>
+</header>
+
+<main>
+  <section aria-labelledby="h-state">
+    <h2 id="h-state">État</h2>
+    <div class="state" id="state" role="status" aria-live="polite">Connexion…</div>
+    <div class="presence"><span class="dot" id="presence-dot" aria-hidden="true"></span>
+      <span id="presence">—</span></div>
+    <div class="muted" id="telemetry"></div>
+    <div class="last">
+      <div class="muted">Dernier geste</div>
+      <div class="name" id="last-name">—</div>
+      <div class="muted" id="last-meta"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-live">
+    <h2 id="h-live">Vue en direct</h2>
+    <canvas id="live" width="640" height="480" role="img"
+            aria-label="Représentation schématique de ce que voit le capteur"></canvas>
+    <p class="legend muted" id="live-legend">Aucune image n'est transmise : seuls des points sont dessinés.</p>
+  </section>
+
+  <section aria-labelledby="h-record">
+    <h2 id="h-record">Enregistrer un geste</h2>
+    <form id="record-form" novalidate>
+      <label>Nom <small>minuscules, chiffres, - ou _ (utilisé dans les automatisations)</small>
+        <input type="text" id="f-name" required pattern="[a-z0-9][a-z0-9_\-]{0,39}"
+               placeholder="lumiere" autocomplete="off" autocapitalize="none"></label>
+      <label>Libellé <small>affiché dans Home Assistant</small>
+        <input type="text" id="f-label" maxlength="80" placeholder="Allumer la lumière"></label>
+      <div class="row">
+        <label>Exemples <input type="number" id="f-samples" min="1" max="20" value="5"></label>
+        <label>Durée (s) <input type="number" id="f-duration" min="0.5" max="6" step="0.5" value="1.5"></label>
+        <label>Préparation (s) <input type="number" id="f-countdown" min="0" max="10" step="1" value="3"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="f-replace"> Remplacer les exemples existants</label>
+      <div><button type="submit" id="btn-record">Commencer l'enregistrement</button></div>
+      <div class="msg" id="form-msg" aria-live="assertive"></div>
+    </form>
+    <div class="rec" id="rec" aria-live="assertive">
+      <div id="rec-title"></div>
+      <div class="big" id="rec-big">3</div>
+      <div class="bar"><div id="rec-bar"></div></div>
+      <div id="rec-msg"></div>
+      <p><button type="button" class="ghost" id="btn-cancel">Annuler</button></p>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-history">
+    <h2 id="h-history">Derniers gestes reconnus</h2>
+    <ul class="history" id="history"><li class="muted">Aucun pour l'instant.</li></ul>
+  </section>
+
+  <section class="wide" aria-labelledby="h-gestures">
+    <div class="toolbar">
+      <h2 id="h-gestures">Gestes enregistrés</h2>
+      <button type="button" class="ghost" id="btn-reload">Recharger depuis le disque</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nom</th><th>Libellé</th><th>Capteur</th><th>Exemples</th><th>Qualité</th><th><span class="sr">Actions</span></th></tr></thead>
+        <tbody id="gestures"><tr><td colspan="6" class="muted">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="muted">Conseil : enregistrez aussi un geste <strong>repos</strong> (position neutre) pour limiter
+      les déclenchements involontaires. Un geste n'est reconnu que par le type de capteur qui a servi à l'enregistrer.</p>
+  </section>
+</main>
+<footer id="footer">MedVision — traitement 100 % local</footer>
+
+<script>
+"use strict";
+// Chemins relatifs : fonctionne aussi derrière l'ingress de Home Assistant.
+const $ = (id) => document.getElementById(id);
+const HAND = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],[13,17],[0,17],[17,18],[18,19],[19,20]];
+let lastRecPhase = null, sensorKind = null, gestureTimer = null;
+
+async function api(path, opts = {}) {
+  const init = { method: opts.method || "GET", headers: {} };
+  if (opts.method && opts.method !== "GET") {
+    init.headers["Content-Type"] = "application/json";
+    init.body = JSON.stringify(opts.body || {});
+  }
+  const res = await fetch(path, init);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function fmtTime(ts) {
+  return new Date(ts * 1000).toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit", second: "2-digit"});
+}
+
+// ------------------------------------------------------------------ vue en direct
+function drawLive(live) {
+  const cv = $("live"), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+  ctx.fillStyle = "#15181b"; ctx.fillRect(0, 0, W, H);
+  if (live.targets !== undefined) return drawRadar(ctx, W, H, live);
+  const hands = live.hands || [];
+  if (!hands.length) {
+    ctx.fillStyle = "#7d858d"; ctx.font = "22px system-ui"; ctx.textAlign = "center";
+    ctx.fillText("Aucune main détectée", W / 2, H / 2);
+    return;
+  }
+  for (const pts of hands) {
+    const p = pts.map(([x, y]) => [x * W, y * H]);
+    ctx.strokeStyle = "#ffc107"; ctx.lineWidth = 4; ctx.lineCap = "round";
+    for (const [a, b] of HAND) { ctx.beginPath(); ctx.moveTo(...p[a]); ctx.lineTo(...p[b]); ctx.stroke(); }
+    ctx.fillStyle = "#ffffff";
+    for (const [x, y] of p) { ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI); ctx.fill(); }
+  }
+}
+
+function drawRadar(ctx, W, H, live) {
+  const maxD = live.max_distance || 4, ox = W / 2, oy = H - 16, scale = (H - 40) / maxD;
+  ctx.strokeStyle = "#3a4046"; ctx.fillStyle = "#7d858d"; ctx.lineWidth = 1;
+  ctx.font = "18px system-ui"; ctx.textAlign = "left";
+  for (let r = 1; r <= Math.floor(maxD); r++) {
+    ctx.beginPath(); ctx.arc(ox, oy, r * scale, Math.PI * 7 / 6, Math.PI * 11 / 6); ctx.stroke();
+    ctx.fillText(r + " m", ox + 4, oy - r * scale + 16);
+  }
+  for (const a of [-60, 60]) {   // champ de vision du LD2450 : ±60°
+    const rad = (a - 90) * Math.PI / 180;
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(rad) * maxD * scale, oy + Math.sin(rad) * maxD * scale); ctx.stroke();
+  }
+  ctx.fillStyle = "#3fb8af"; ctx.fillRect(ox - 14, oy, 28, 8);
+  for (const t of live.targets) {
+    const x = ox + t.x * scale, y = oy - t.y * scale;
+    ctx.fillStyle = t.focus ? "#ffc107" : (t.in_zone ? "#d0d4d8" : "#59606a");
+    ctx.beginPath(); ctx.arc(x, y, t.focus ? 13 : 9, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = "#e6e6e6"; ctx.fillText(`${Math.hypot(t.x, t.y).toFixed(1)} m`, x + 16, y + 5);
+  }
+  if (!live.targets.length) {
+    ctx.fillStyle = "#7d858d"; ctx.font = "22px system-ui"; ctx.textAlign = "center";
+    ctx.fillText("Personne dans la zone", W / 2, H / 2);
+  }
+}
+
+// ------------------------------------------------------------------ état
+function render(s) {
+  if (sensorKind !== s.sensor.kind) {
+    sensorKind = s.sensor.kind;
+    $("sensor-badge").textContent = `${s.sensor.kind} · ${s.sensor.format_label || s.sensor.feature_format}`;
+    $("live-legend").textContent = s.sensor.feature_format.startsWith("ld2450")
+      ? "Vue de dessus du radar : chaque disque est une personne. En jaune, la cible suivie pour les gestes."
+      : "Aucune image n'est transmise : seuls les points de la main sont dessinés.";
+    loadGestures();
+  }
+  $("device").textContent = s.device.name;
+  $("footer").textContent = `MedVision ${s.version} — traitement 100 % local` + (s.mqtt ? " — MQTT actif" : " — sans MQTT");
+  const st = $("state");
+  st.dataset.state = s.recording && ["countdown","capture"].includes(s.recording.phase) ? "rec" : s.state;
+  st.textContent = s.status;
+  $("presence-dot").classList.toggle("on", s.present);
+  $("presence").textContent = (s.present ? "Détecté : " : "Rien : ") + s.sensor.presence_name.toLowerCase();
+  const tel = s.telemetry || {};
+  $("telemetry").textContent = tel.targets !== undefined
+    ? `${tel.targets} personne(s) dans la zone` + (tel.distance != null ? ` · ${tel.distance} m` : "") : "";
+
+  const last = s.history[0];
+  $("last-name").textContent = last ? (last.label || last.name) : "—";
+  $("last-meta").textContent = last ? `${last.name} · confiance ${Math.round(last.confidence * 100)} % · ${fmtTime(last.at)}` : "";
+  $("history").innerHTML = s.history.length
+    ? s.history.map((h) => `<li><span>${esc(h.label || h.name)}</span><span class="muted">${Math.round(h.confidence*100)} % · ${fmtTime(h.at)}</span></li>`).join("")
+    : '<li class="muted">Aucun pour l\'instant.</li>';
+
+  drawLive(s.live || {});
+  renderRecording(s.recording);
+}
+
+function renderRecording(r) {
+  const box = $("rec"), running = r && ["countdown", "capture"].includes(r.phase);
+  box.classList.toggle("active", !!running);
+  $("record-form").querySelectorAll("input, button").forEach((el) => (el.disabled = !!running));
+  if (r && !running && lastRecPhase !== null) {   // fin : résultat affiché sous le formulaire
+    const msg = $("form-msg");
+    msg.textContent = r.message;
+    msg.className = "msg" + (r.phase === "done" ? "" : " error");
+    if (["countdown", "capture"].includes(lastRecPhase)) loadGestures();
+  }
+  if (r) lastRecPhase = r.phase;
+  if (!running) return;
+  box.dataset.phase = r.phase;
+  $("rec-title").textContent = `« ${r.name} » — exemple ${r.sample} / ${r.total}`;
+  $("rec-big").textContent = r.phase === "countdown" ? Math.ceil(r.seconds_left) || "…" : "Faites le geste";
+  $("rec-bar").style.width = `${Math.round((r.phase === "capture" ? r.progress : 0) * 100)}%`;
+  $("rec-msg").textContent = r.message;
+}
+
+async function poll() {
+  let delay = 400;
+  try {
+    const s = await api("api/state");
+    render(s);
+    if (s.recording && ["countdown", "capture"].includes(s.recording.phase)) delay = 150;
+  } catch (e) {
+    $("state").textContent = "Moteur injoignable…";
+    delay = 2000;
+  }
+  setTimeout(poll, delay);
+}
+
+// ------------------------------------------------------------------ gestes
+async function loadGestures() {
+  clearTimeout(gestureTimer);
+  gestureTimer = setTimeout(loadGestures, 15000);
+  try {
+    const { gestures } = await api("api/gestures");
+    $("gestures").innerHTML = gestures.length ? gestures.map(rowHtml).join("")
+      : '<tr><td colspan="6" class="muted">Aucun geste : enregistrez-en un ci-dessus.</td></tr>';
+  } catch (e) { /* réessai au prochain cycle */ }
+}
+
+function rowHtml(g) {
+  if (g.error) return `<tr><td>${esc(g.name)}</td><td colspan="5" class="msg error">${esc(g.error)}</td></tr>`;
+  const tags = [g.rest ? "neutre" : "", g.attention ? "attention" : ""].filter(Boolean).map((t) => ` <span class="badge">${t}</span>`).join("");
+  const q = !g.compatible ? '<span class="muted">autre capteur</span>'
+    : `<span class="${g.quality === "bon" ? "q-bon" : "q-warn"}">${esc(g.quality)}</span>`;
+  return `<tr class="${g.compatible ? "" : "incompatible"}">
+    <td><strong>${esc(g.name)}</strong>${tags}</td><td>${esc(g.label)}</td><td>${esc(g.format_label)}</td>
+    <td class="num">${g.samples}</td><td>${q}</td>
+    <td><button type="button" class="danger" data-delete="${esc(g.name)}" aria-label="Supprimer ${esc(g.name)}">Supprimer</button></td></tr>`;
+}
+
+$("gestures").addEventListener("click", async (ev) => {
+  const btn = ev.target.closest("button[data-delete]");
+  if (!btn) return;
+  if (!btn.classList.contains("confirm")) {   // double clic de confirmation, sans boîte modale
+    btn.classList.add("confirm"); btn.textContent = "Confirmer ?";
+    setTimeout(() => { btn.classList.remove("confirm"); btn.textContent = "Supprimer"; }, 3000);
+    return;
+  }
+  try { await api(`api/gestures/${encodeURIComponent(btn.dataset.delete)}`, { method: "DELETE" }); }
+  catch (e) { $("form-msg").textContent = e.message; $("form-msg").className = "msg error"; }
+  setTimeout(loadGestures, 300);
+});
+
+$("record-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const msg = $("form-msg"), name = $("f-name");
+  msg.className = "msg"; msg.textContent = "";
+  name.value = name.value.trim().toLowerCase();
+  if (!name.checkValidity()) {
+    msg.textContent = "Nom invalide : minuscules, chiffres, - ou _ (ex. lumiere, volet_ouvrir).";
+    msg.className = "msg error"; name.focus(); return;
+  }
+  try {
+    const r = await api("api/record", { method: "POST", body: {
+      name: name.value, label: $("f-label").value, samples: Number($("f-samples").value),
+      duration: Number($("f-duration").value), countdown: Number($("f-countdown").value),
+      replace: $("f-replace").checked } });
+    lastRecPhase = null; renderRecording(r);
+  } catch (e) { msg.textContent = e.message; msg.className = "msg error"; }
+});
+
+$("btn-cancel").addEventListener("click", () => api("api/record/cancel", { method: "POST" }).catch(() => {}));
+$("btn-reload").addEventListener("click", async () => {
+  await api("api/reload", { method: "POST" }).catch(() => {});
+  setTimeout(loadGestures, 600);
+});
+
+poll();
+loadGestures();
+</script>
+</body>
+</html>

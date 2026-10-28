@@ -1,6 +1,7 @@
 # Banc d'essai complet sans Home Assistant : un broker MQTT + le moteur.
 #   docker compose up --build
 #   docker compose exec mosquitto mosquitto_sub -t 'medvision/#' -v   # voir les gestes
+#   interface web : http://127.0.0.1:8099
 services:
   mosquitto:
     image: eclipse-mosquitto:2
@@ -11,11 +12,19 @@ services:
   medvision:
     build: .
     depends_on: [mosquitto]
+    command: ["run", "--web"]
     environment:
       MEDVISION_MQTT_HOST: mosquitto
+      # Capteur : camera | ld2450 | simulation
+      MEDVISION_SENSOR_TYPE: camera
       MEDVISION_CAMERA_SOURCE: "0"   # ou rtsp://utilisateur:motdepasse@192.168.50.10/stream2
+      # Radar : MEDVISION_SENSOR_TYPE: ld2450 et
+      # MEDVISION_RADAR_PORT: /dev/ttyUSB0   (ou socket://192.168.50.20:6638)
     devices:
       - /dev/video0:/dev/video0       # supprimer si caméra IP
+      # - /dev/ttyUSB0:/dev/ttyUSB0   # radar LD2450 en USB
+    ports:
+      - "127.0.0.1:8099:8099"         # interface web, sur cette machine seulement
     volumes:
       - ./gestures:/data/gestures
       - medvision-models:/data/models

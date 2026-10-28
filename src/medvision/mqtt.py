@@ -1,13 +1,19 @@
 """Publication vers Home Assistant via MQTT, avec découverte automatique.
 
-Entités créées automatiquement pour chaque caméra (`device_id`) :
+Entités créées automatiquement pour chaque capteur (`device_id`) :
   - event.<device>_geste           : un événement par geste reconnu (déclencheur d'automatisation)
   - sensor.<device>_dernier_geste  : nom du dernier geste
-  - binary_sensor.<device>_main    : une main est visible
+  - binary_sensor.<device>_main    : une main est visible (caméra)
+    ou binary_sensor.<device>_presence : quelqu'un est présent (radar)
   - binary_sensor.<device>_attente : le geste d'attention a été fait, commande attendue
   - button.<device>_recharger      : relit le dossier des gestes sans redémarrer
+  - sensor.<device>_<mesure>       : mesures propres au capteur (radar : nombre de
+                                     personnes, distance)
 
-Topics : <base>/<device>/{status,gesture,last_gesture,hand,armed,cmd}
+Les entités dépendant du capteur sont décrites par l'adapter (`SensorAdapter`) : ce module
+ne connaît aucun capteur en particulier.
+
+Topics : <base>/<device>/{status,gesture,last_gesture,presence,armed,telemetry,cmd}
 """
 
 from __future__ import annotations
@@ -21,13 +27,23 @@ import paho.mqtt.client as mqtt
 from medvision import __version__
 from medvision.config import Config
 from medvision.engine import GestureEvent, State
+from medvision.sensors.base import SensorAdapter
 
 log = logging.getLogger(__name__)
 
 
 class HomeAssistantMqtt:
-    def __init__(self, cfg: Config, on_command: Callable[[str], None] | None = None):
+    def __init__(
+        self,
+        cfg: Config,
+        on_command: Callable[[str], None] | None = None,
+        sensor: SensorAdapter | type[SensorAdapter] | None = None,
+    ):
         self.cfg = cfg
+        self.sensor = sensor
+        self.presence_key = getattr(sensor, "presence_key", "main")
+        self.presence_name = getattr(sensor, "presence_name", "Main détectée")
+        self.telemetry_entities = tuple(getattr(sensor, "telemetry_entities", ()))
         self.on_command = on_command or (lambda c: None)
         self.uid = f"medvision_{cfg.device_id}"
         self.base = f"{cfg.mqtt_base_topic}/{cfg.device_id}"
@@ -77,7 +93,13 @@ class HomeAssistantMqtt:
         )
 
     def publish_presence(self, present: bool) -> None:
-        self.client.publish(f"{self.base}/hand", "ON" if present else "OFF", qos=0, retain=True)
+        self.client.publish(f"{self.base}/presence", "ON" if present else "OFF", qos=0, retain=True)
+
+    def publish_telemetry(self, values: dict) -> None:
+        if self.telemetry_entities:
+            self.client.publish(
+                f"{self.base}/telemetry", json.dumps(values, ensure_ascii=False), qos=0
+            )
 
     # ---------------------------------------------------------------- interne
     def _device(self) -> dict:
@@ -85,7 +107,7 @@ class HomeAssistantMqtt:
             "identifiers": [self.uid],
             "name": self.cfg.device_name,
             "manufacturer": "MedVision (open source)",
-            "model": "Gesture Engine",
+            "model": f"Gesture Engine ({getattr(self.sensor, 'kind', '') or 'camera'})",
             "sw_version": __version__,
         }
 
@@ -113,9 +135,11 @@ class HomeAssistantMqtt:
                 "state_topic": f"{self.base}/last_gesture",
                 "icon": "mdi:gesture",
             },
-            f"{p}/binary_sensor/{self.uid}/hand/config": {
-                **self._common("binary_sensor", "main", "Main détectée"),
-                "state_topic": f"{self.base}/hand",
+            # « hand » : topic de découverte de la v0.1, gardé pour ne pas dupliquer l'entité.
+            f"{p}/binary_sensor/{self.uid}/"
+            f"{'hand' if self.presence_key == 'main' else self.presence_key}/config": {
+                **self._common("binary_sensor", self.presence_key, self.presence_name),
+                "state_topic": f"{self.base}/presence",
                 "device_class": "occupancy",
             },
             f"{p}/binary_sensor/{self.uid}/armed/config": {
@@ -130,6 +154,18 @@ class HomeAssistantMqtt:
                 "entity_category": "config",
             },
         }
+        for ent in self.telemetry_entities:
+            cfg = {
+                **self._common("sensor", ent.key, ent.name),
+                "state_topic": f"{self.base}/telemetry",
+                # Une valeur absente est publiée « None » : Home Assistant affiche « inconnu ».
+                "value_template": f"{{{{ value_json.{ent.key} }}}}",
+                "state_class": "measurement",
+            }
+            for k in ("unit", "device_class", "icon"):
+                if getattr(ent, k):
+                    cfg["unit_of_measurement" if k == "unit" else k] = getattr(ent, k)
+            configs[f"{p}/sensor/{self.uid}/{ent.key}/config"] = cfg
         for topic, payload in configs.items():
             self.client.publish(topic, json.dumps(payload, ensure_ascii=False), qos=1, retain=True)
 

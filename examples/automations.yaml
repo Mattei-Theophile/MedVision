@@ -51,3 +51,32 @@
     - action: light.turn_on
       target: { entity_id: light.salon }
       data: { flash: short }
+
+# 4. Radar LD2450 : veilleuse la nuit quand quelqu'un se lève (fonctionne dans le noir).
+- alias: "MedVision – veilleuse de nuit (radar)"
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.medvision_chambre_presence
+      to: "on"
+  conditions:
+    - condition: time
+      after: "22:30:00"
+      before: "07:00:00"
+  actions:
+    - action: light.turn_on
+      target: { entity_id: light.couloir }
+      data: { brightness_pct: 15 }
+
+# 5. Radar LD2450 : un geste ample « approche » (s'avancer vers le radar) allume la lampe.
+- alias: "MedVision – approche (radar)"
+  triggers:
+    - trigger: state
+      entity_id: event.medvision_chambre_geste
+  conditions:
+    - condition: state
+      entity_id: event.medvision_chambre_geste
+      attribute: event_type
+      state: approche
+  actions:
+    - action: light.toggle
+      target: { entity_id: light.chambre }

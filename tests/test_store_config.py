@@ -44,3 +44,28 @@ def test_config_rejects_unknown_and_invalid(tmp_path):
     p.write_text("num_hands: 3\n")
     with pytest.raises(ValueError):
         Config.load(p, env={})
+
+
+def test_store_keeps_formats_apart(tmp_path, gesture):
+    from medvision.features import HAND_FORMAT, RADAR_FORMAT
+
+    store = GestureStore(tmp_path)
+    store.save("lumiere", [gesture("poing", seed=s) for s in range(3)])
+    radar = [np.zeros((10, 3), dtype=np.float32) + s for s in range(3)]
+    store.save("approche", radar, feature_format=RADAR_FORMAT)
+    assert store.list(HAND_FORMAT) == ["lumiere"] and store.list(RADAR_FORMAT) == ["approche"]
+    assert store.build_library(feature_format=RADAR_FORMAT).names == ["approche"]
+    assert store.build_library().names == ["lumiere"]  # défaut v0.1 : format main
+    with pytest.raises(ValueError, match="autre capteur"):
+        store.save("lumiere", radar, feature_format=RADAR_FORMAT)
+    with pytest.raises(ValueError):
+        store.save("approche", [np.zeros((5, 63))], feature_format=RADAR_FORMAT)
+    store.save("lumiere", radar, feature_format=RADAR_FORMAT, append=False)  # remplacement
+    assert store.format_of("lumiere") == RADAR_FORMAT
+
+
+def test_config_sensor_options(tmp_path):
+    cfg = Config.load(None, env={"MEDVISION_SENSOR_TYPE": "LD2450", "MEDVISION_RADAR_PORT": "x"})
+    assert cfg.sensor_type == "ld2450" and cfg.radar_port == "x"
+    with pytest.raises(ValueError):
+        Config.load(None, env={"MEDVISION_RADAR_MAX_DISTANCE": "12"})

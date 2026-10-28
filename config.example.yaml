@@ -1,11 +1,21 @@
 # Copier en config.yaml puis : uv run medvision -c config.yaml run
 # Toutes les options peuvent aussi passer par des variables MEDVISION_<OPTION> (ex. MEDVISION_FPS=10).
 
+# Capteur : camera | ld2450 (radar mmWave) | simulation. Liste : uv run medvision sensors
+sensor_type: camera
+
 # Caméra : 0 = première webcam ; ou flux RTSP (utilisez le flux secondaire basse définition).
 camera_source: "0"
 camera_width: 640
 camera_height: 480
 fps: 15
+
+# Radar HLK-LD2450 : port série, ou passerelle réseau "socket://192.168.50.20:6638".
+radar_port: /dev/ttyUSB0
+radar_baudrate: 256000
+radar_max_distance: 4.0   # m
+radar_anchor_time: 3.0    # s
+# Conseil radar (~10 mesures/s) : window_frames 15 à 20 et des exemples de 1,5 à 2 s.
 
 # N'active la détection des mains qu'en cas de mouvement (économise ~80 % de CPU pièce vide).
 motion_gating: true
@@ -21,6 +31,12 @@ default_threshold: 0.35
 stable_hits: 1
 rest_gestures: repos   # gestes neutres, jamais émis (séparés par des virgules)
 ambidextrous: true
+
+# Interface web d'enregistrement (aussi : uv run medvision run --web).
+# Sans mot de passe : laissez 127.0.0.1 sauf sur un réseau domotique de confiance.
+web_enabled: false
+web_host: 127.0.0.1
+web_port: 8099
 
 # Dossiers
 gestures_dir: gestures

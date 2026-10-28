@@ -19,8 +19,11 @@ RUN uv sync --locked --no-dev
 
 ENV PATH="/app/.venv/bin:$PATH" \
     MEDVISION_GESTURES_DIR=/data/gestures \
-    MEDVISION_MODEL_PATH=/data/models/hand_landmarker.task
+    MEDVISION_MODEL_PATH=/data/models/hand_landmarker.task \
+    MEDVISION_WEB_HOST=0.0.0.0
 VOLUME /data
+# Interface web (activée par MEDVISION_WEB_ENABLED=true ou `run --web`).
+EXPOSE 8099
 
 ENTRYPOINT ["medvision"]
 CMD ["run"]

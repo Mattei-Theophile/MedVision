@@ -110,6 +110,11 @@ class GestureEngine:
 
         return self._handle(match, now)
 
+    def pause(self, seconds: float) -> None:
+        """Ignore les observations pendant `seconds` (ex. juste après un enregistrement)."""
+        self.window.clear()
+        self._cooldown_until = max(self._cooldown_until, self.clock() + seconds)
+
     def reset(self) -> None:
         self.window.clear()
         self._last_candidate, self._hits = None, 0

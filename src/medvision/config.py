@@ -19,6 +19,11 @@ import yaml
 
 @dataclass
 class Config:
+    # --- Capteur --------------------------------------------------------------
+    # "camera" (webcam/RTSP + MediaPipe), "ld2450" (radar mmWave) ou "simulation".
+    # Voir `medvision sensors` pour la liste complète.
+    sensor_type: str = "camera"
+
     # --- Caméra ---------------------------------------------------------------
     # Index de webcam ("0") ou URL RTSP/HTTP ("rtsp://user:pass@192.168.50.10/stream2").
     camera_source: str = "0"
@@ -39,6 +44,16 @@ class Config:
     min_detection_confidence: float = 0.5
     # Symétrise la main gauche pour qu'un geste appris d'une main marche avec l'autre.
     ambidextrous: bool = True
+
+    # --- Radar mmWave HLK-LD2450 ---------------------------------------------
+    # Port série local ou passerelle réseau : "socket://192.168.50.20:6638".
+    radar_port: str = "/dev/ttyUSB0"
+    radar_baudrate: int = 256000
+    radar_max_distance: float = 4.0  # m ; les cibles plus lointaines sont ignorées
+    radar_anchor_time: float = 3.0  # s ; vitesse à laquelle l'ancre suit la personne
+
+    # --- Simulation -----------------------------------------------------------
+    simulation_gestures: str = ""  # gestes rejoués (séparés par des virgules) ; vide = tous
 
     # --- Reconnaissance -------------------------------------------------------
     gestures_dir: str = "gestures"
@@ -70,6 +85,14 @@ class Config:
     mqtt_base_topic: str = "medvision"
     device_id: str = "salon"
     device_name: str = "MedVision Salon"
+
+    # --- Interface web (enregistrement et gestion des gestes) -----------------
+    # Dans l'add-on, elle s'ouvre depuis la barre latérale de Home Assistant (ingress).
+    web_enabled: bool = False
+    # 127.0.0.1 = accessible depuis cette machine seulement. L'interface n'a pas de mot de
+    # passe : ne l'ouvrez sur le réseau (0.0.0.0) que sur un réseau domotique de confiance.
+    web_host: str = "127.0.0.1"
+    web_port: int = 8099
 
     log_level: str = "INFO"
 
@@ -115,6 +138,15 @@ class Config:
             raise ValueError("min_hand_ratio doit être dans ]0, 1]")
         if self.num_hands not in (1, 2):
             raise ValueError("num_hands doit valoir 1 ou 2")
+        self.sensor_type = self.sensor_type.strip().lower()
+        if not self.sensor_type:
+            raise ValueError("sensor_type ne peut pas être vide")
+        if self.radar_max_distance <= 0 or self.radar_max_distance > 8:
+            raise ValueError("radar_max_distance doit être dans ]0, 8] m (portée du LD2450 : 6 m)")
+        if self.radar_anchor_time <= 0:
+            raise ValueError("radar_anchor_time doit être > 0")
+        if not 0 < self.web_port < 65536:
+            raise ValueError("web_port invalide")
 
     @property
     def rest_set(self) -> set[str]:

@@ -1,7 +1,7 @@
 name: MedVision Gesture Engine
-version: "0.1.0"
+version: "0.3.0"
 slug: medvision
-description: Commande domotique par gestes et signes, 100 % locale (aucune vidéo stockée).
+description: Commande domotique par gestes (caméra ou radar mmWave), 100 % locale, aucune vidéo stockée.
 url: https://github.com/VOTRE_COMPTE/medvision
 arch:
   - amd64
@@ -9,8 +9,14 @@ arch:
 startup: application
 boot: auto
 init: false
-# Accès aux webcams USB (/dev/video*).
+# Interface d'enregistrement des gestes dans la barre latérale (authentification par HA).
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:hand-wave
+panel_title: MedVision
+# Accès aux webcams USB (/dev/video*) et aux ports série (/dev/ttyUSB*, /dev/ttyACM*) du radar.
 video: true
+uart: true
 # Les gestes sont rangés dans /share/medvision/gestures.
 map:
   - type: share
@@ -19,7 +25,9 @@ map:
 services:
   - mqtt:want
 options:
+  sensor_type: camera
   camera_source: "0"
+  radar_port: /dev/ttyUSB0
   fps: 15
   device_id: salon
   device_name: MedVision Salon
@@ -30,7 +38,12 @@ options:
   mqtt_host: auto
   log_level: INFO
 schema:
+  sensor_type: list(camera|ld2450|simulation)
   camera_source: str
+  radar_port: str
+  radar_baudrate: int?
+  radar_max_distance: float(0.5,6)?
+  radar_anchor_time: float(0.5,10)?
   fps: int(1,30)
   device_id: match(^[a-z0-9_]+$)
   device_name: str
@@ -45,4 +58,5 @@ schema:
   default_threshold: float(0.05,2)?
   window_frames: int(5,60)?
   num_hands: int(1,2)?
+  rest_gestures: str?
   log_level: list(DEBUG|INFO|WARNING|ERROR)

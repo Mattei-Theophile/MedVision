@@ -18,6 +18,21 @@ WRIST = 0
 PALM_POINTS = (5, 9, 13, 17)  # bases de l'index, du majeur, de l'annulaire, de l'auriculaire
 FEATURE_DIM = NUM_LANDMARKS * 3
 
+# Chaque capteur produit des vecteurs d'un format donné. Un geste enregistré avec un capteur
+# n'est comparable qu'à des observations du même format : le format est stocké avec le geste.
+HAND_FORMAT = "mediapipe-hand-21x3-normalized"
+RADAR_FORMAT = "ld2450-target-v1"
+FORMATS: dict[str, int] = {HAND_FORMAT: FEATURE_DIM, RADAR_FORMAT: 3}
+FORMAT_LABELS = {HAND_FORMAT: "main (caméra)", RADAR_FORMAT: "cible (radar LD2450)"}
+
+
+def register_format(name: str, dim: int, label: str = "") -> None:
+    """Déclare un nouveau format de vecteur (pour un adapter de capteur tiers)."""
+    if FORMATS.get(name, dim) != dim:
+        raise ValueError(f"format {name!r} déjà déclaré avec une autre dimension")
+    FORMATS[name] = dim
+    FORMAT_LABELS.setdefault(name, label or name)
+
 
 def normalize_hand(
     landmarks: np.ndarray | list, handedness: str | None = None, ambidextrous: bool = True

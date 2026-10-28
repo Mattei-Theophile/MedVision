@@ -3,4 +3,4 @@ build_from:
   amd64: python:3.12-slim-bookworm
   aarch64: python:3.12-slim-bookworm
 args:
-  MEDVISION_REF: v0.1.0
+  MEDVISION_REF: v0.3.0

@@ -1,6 +1,6 @@
 """MedVision : commande domotique par gestes et langue des signes, 100 % locale."""
 
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 
 
 def main() -> None:
